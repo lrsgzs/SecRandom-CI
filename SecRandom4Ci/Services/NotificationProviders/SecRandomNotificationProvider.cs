@@ -14,6 +14,8 @@ namespace SecRandom4Ci.Services.NotificationProviders;
 [NotificationProviderInfo("A0C99B32-EFA4-4843-ADF6-54DE7C6FCD56", "SecRandom抽选结果", "\uECB6", "显示SecRandom的抽选结果")]
 public class SecRandomNotificationProvider : NotificationProviderBase
 {
+    private NotificationRequest? _lastRequest = null;
+    private ResultType _lastResultType = ResultType.Unknown;
     private ResultNotificationControl? _maskControl = null;
     private SecRandomService SecRandomService { get; }
 
@@ -43,14 +45,20 @@ public class SecRandomNotificationProvider : NotificationProviderBase
         
         Dispatcher.UIThread.Invoke(() =>
         {
-            if (_maskControl != null)
+            if (_maskControl != null &&
+                _lastResultType is ResultType.PartialRollCall or ResultType.PartialQuickDraw or ResultType.PartialLottery)
             {
+                _lastResultType = data.ResultType;
+                
                 _maskControl.Model.Prefix = prefix;
                 _maskControl.Model.Items.Clear();
                 _maskControl.Model.Items.AddRange(data.Items);
                 return;
             }
 
+            _lastResultType = data.ResultType;
+            _lastRequest?.Cancel();
+            
             _maskControl = new ResultNotificationControl
             {
                 Model =
@@ -60,7 +68,7 @@ public class SecRandomNotificationProvider : NotificationProviderBase
                 }
             };
             
-            var request = new NotificationRequest
+            _lastRequest = new NotificationRequest
             {
                 MaskContent = new NotificationContent(_maskControl)
                 {
@@ -68,8 +76,8 @@ public class SecRandomNotificationProvider : NotificationProviderBase
                     IsSpeechEnabled = false
                 }
             };
-            request.CompletedToken.Register(() => _maskControl = null);
-            ShowNotification(request);
+            _lastRequest.CompletedToken.Register(() => _maskControl = null);
+            ShowNotification(_lastRequest);
         });
     }
 }
