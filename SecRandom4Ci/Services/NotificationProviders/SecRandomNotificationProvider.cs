@@ -46,7 +46,8 @@ public class SecRandomNotificationProvider : NotificationProviderBase
         Dispatcher.UIThread.Invoke(() =>
         {
             if (_maskControl != null &&
-                _lastResultType is ResultType.PartialRollCall or ResultType.PartialQuickDraw or ResultType.PartialLottery or ResultType.Legacy or ResultType.Unknown)
+                (_lastResultType is ResultType.PartialRollCall or ResultType.PartialQuickDraw or ResultType.PartialLottery or ResultType.Legacy or ResultType.Unknown ||
+                 _lastResultType == data.ResultType))
             {
                 _lastResultType = data.ResultType;
                 
